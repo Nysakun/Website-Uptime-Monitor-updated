@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta id="apiKeyMeta" name="api-key" content="__API_KEY__">
+<title>Website Uptime Checker</title>
+<style>
+  :root {
+    --bg:#f4f6fb; --card:#ffffff; --text:#1f2a44; --muted:#6b7794; --line:#e6eaf3;
+    --brand:#4f46e5; --brand2:#7c3aed;
+    --up:#15803d; --up-bg:#dcfce7;
+    --down:#b91c1c; --down-bg:#fee2e2;
+    --warn:#b45309; --warn-bg:#fef3c7;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+         background:var(--bg); color:var(--text); }
+  .hero { background:linear-gradient(135deg,var(--brand),var(--brand2)); color:#fff;
+          padding:44px 20px 100px; text-align:center; }
+  .hero h1 { margin:0 0 8px; font-size:30px; }
+  .hero p { margin:0; opacity:.88; }
+  .wrap { max-width:860px; margin:-64px auto 40px; padding:0 16px; }
+  .card { background:var(--card); border-radius:16px; padding:22px; margin-bottom:18px;
+          box-shadow:0 8px 28px rgba(31,42,68,.08); }
+  form { display:flex; gap:10px; flex-wrap:wrap; }
+  input { flex:1; min-width:220px; padding:14px 16px; font-size:16px; color:var(--text);
+          border:2px solid var(--line); border-radius:12px; outline:none; }
+  input:focus { border-color:var(--brand); }
+  button { padding:14px 28px; font-size:16px; font-weight:600; color:#fff;
+           background:var(--brand); border:0; border-radius:12px; cursor:pointer; }
+  button:hover { filter:brightness(1.08); }
+  button:disabled { opacity:.6; cursor:wait; }
+  button.secondary { background:#fff; color:var(--brand); border:2px solid var(--brand); }
+  .chips { margin-top:12px; font-size:14px; color:var(--muted); }
+  .chip { display:inline-block; margin:4px 6px 0 0; padding:5px 12px; font-size:13px;
+          border:1px solid var(--line); border-radius:999px; background:#f8f9fe;
+          color:var(--brand); cursor:pointer; }
+  .chip:hover { background:#eef0ff; }
+  .center { text-align:center; }
+  .muted { color:var(--muted); }
+  .spinner { width:38px; height:38px; margin:6px auto 14px; border:4px solid var(--line);
+             border-top-color:var(--brand); border-radius:50%; animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .top { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .badge { font-weight:800; font-size:22px; padding:10px 22px; border-radius:12px; letter-spacing:.5px; }
+  .badge.up { background:var(--up-bg); color:var(--up); }
+  .badge.down { background:var(--down-bg); color:var(--down); }
+  .badge.warn { background:var(--warn-bg); color:var(--warn); }
+  .name { font-size:22px; font-weight:700; word-break:break-all; }
+  .meta { margin-top:4px; font-size:14px; color:var(--muted); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+  .stat { background:#f8f9fe; border-radius:12px; padding:14px; }
+  .stat .v { font-size:24px; font-weight:800; }
+  .stat .l { font-size:13px; color:var(--muted); margin-top:2px; }
+  h3 { margin:0 0 12px; font-size:16px; }
+  .bars { display:flex; gap:3px; height:46px; }
+  .bar { flex:1; max-width:18px; border-radius:4px; }
+  .bar.ok { background:#22c55e; }
+  .bar.bad { background:#ef4444; }
+  .issue { border-radius:12px; padding:16px 18px; border-left:6px solid; }
+  .issue.ok { background:var(--up-bg); border-color:#22c55e; }
+  .issue.warning { background:var(--warn-bg); border-color:#f59e0b; }
+  .issue.error { background:var(--down-bg); border-color:#ef4444; }
+  .issue b { display:block; font-size:17px; margin-bottom:6px; }
+  .issue p { margin:4px 0; }
+  .monitor { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .monitor b { font-size:17px; }
+  .monitor p { margin:6px 0 0; max-width:560px; }
+  .monitor.on { border:2px solid #22c55e; }
+  .msg { color:var(--down); font-size:14px; }
+  .scroll { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th { text-align:left; color:var(--muted); font-weight:600; padding:8px 10px; border-bottom:2px solid var(--line); }
+  td { padding:9px 10px; border-bottom:1px solid var(--line); }
+  .pill { padding:2px 10px; border-radius:999px; font-size:12px; font-weight:700; }
+  .pill.up { background:var(--up-bg); color:var(--up); }
+  .pill.down { background:var(--down-bg); color:var(--down); }
+  .error-box { background:var(--down-bg); color:var(--down); border-radius:12px; padding:14px 16px; }
+  footer { text-align:center; color:var(--muted); font-size:13px; padding-bottom:30px; }
+  footer a { color:var(--brand); }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>🌐 Website Uptime Checker</h1>
+  <p>Enter a domain or IP address to see if it is up, and what the problem is.</p>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <form id="form">
+      <input id="target" type="text" placeholder="e.g. google.com or 8.8.8.8"
+             autocomplete="off" autofocus required>
+      <button id="btn" type="submit">Check</button>
+    </form>
+    <div class="chips">Try:
+      <span class="chip">google.com</span>
+      <span class="chip">github.com</span>
+      <span class="chip">8.8.8.8</span>
+      <span class="chip">1.1.1.1</span>
+    </div>
+  </div>
+
+  <div id="result"></div>
+</div>
+
+<footer>API documentation: <a href="/docs" target="_blank">/docs</a></footer>
+
+<script>
+  const API_KEY = document.getElementById('apiKeyMeta').content;
+  const AUTH_HEADERS = API_KEY ? { 'X-API-Key': API_KEY } : {};
+
+  const form = document.getElementById('form');
+  const input = document.getElementById('target');
+  const btn = document.getElementById('btn');
+  const out = document.getElementById('result');
+  const REFRESH_MS = 15000;
+  let timer = null;
+
+  // Escape text so nothing typed by a user can inject HTML into the page
+  function esc(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+    ));
+  }
+
+  function fmtTime(iso) {
+    return new Date(iso).toLocaleString([], {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+  }
+
+  function showError(message) {
+    out.innerHTML = '<div class="error-box">⚠️ ' + esc(message) + '</div>';
+  }
+
+  // ----- auto refresh (only while the target is being monitored) -----
+  function stopTimer() {
+    if (timer) { clearInterval(timer); timer = null; }
+  }
+
+  function startTimer(target) {
+    stopTimer();
+    timer = setInterval(() => refresh(target), REFRESH_MS);
+  }
+
+  async function refresh(target) {
+    try {
+      const res = await fetch('/api/report?target=' + encodeURIComponent(target),
+                              { headers: AUTH_HEADERS });
+      if (res.ok) render(await res.json());
+    } catch (err) { /* try again on the next tick */ }
+  }
+
+  // ----- start / stop monitoring -----
+  async function toggleWatch(d) {
+    const watchBtn = document.getElementById('watchBtn');
+    const msg = document.getElementById('watchMsg');
+    watchBtn.disabled = true;
+    msg.textContent = '';
+    try {
+      let res;
+      if (d.monitored) {
+        res = await fetch('/api/watchlist?target=' + encodeURIComponent(d.target),
+                          { method: 'DELETE', headers: AUTH_HEADERS });
+      } else {
+        res = await fetch('/api/watchlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...AUTH_HEADERS },
+          body: JSON.stringify({ target: d.target })
+        });
+      }
+      const data = await res.json();
+      if (!res.ok) {
+        msg.textContent = typeof data.detail === 'string' ? data.detail : 'Something went wrong.';
+        watchBtn.disabled = false;
+        return;
+      }
+      d.monitored = data.monitored;
+      render(d);
+    } catch (err) {
+      msg.textContent = 'Could not reach the server.';
+      watchBtn.disabled = false;
+    }
+  }
+
+  // ----- draw the report -----
+  function render(d) {
+    const cur = d.current, s = d.stats, dg = d.diagnosis;
+    const cls = !cur.is_up ? 'down' : (dg.level === 'warning' ? 'warn' : 'up');
+    const label = !cur.is_up ? 'DOWN' : (dg.level === 'warning' ? 'SLOW' : 'UP');
+
+    // oldest on the left, newest on the right
+    const bars = d.history.slice().reverse().map(h =>
+      '<span class="bar ' + (h.is_up ? 'ok' : 'bad') + '" title="' +
+      esc(fmtTime(h.checked_at) + ' - ' + (h.is_up ? 'UP' : 'DOWN')) + '"></span>'
+    ).join('');
+
+    const rows = d.history.slice(0, 10).map(h => `
+      <tr>
+        <td>${esc(fmtTime(h.checked_at))}</td>
+        <td><span class="pill ${h.is_up ? 'up' : 'down'}">${h.is_up ? 'UP' : 'DOWN'}</span></td>
+        <td>${h.status_code ?? '-'}</td>
+        <td>${h.response_time_ms != null ? h.response_time_ms + ' ms' : '-'}</td>
+        <td>${esc(h.error || '-')}</td>
+      </tr>`).join('');
+
+    const avg = s.avg_response_ms != null ? s.avg_response_ms + ' ms' : 'N/A';
+    const now = cur.response_time_ms != null ? cur.response_time_ms + ' ms' : '-';
+    const hint = (!d.monitored && s.total_checks < 5)
+      ? '<p class="muted" style="margin:12px 0 0">Uptime gets more reliable with every check. ' +
+        'Start monitoring to build history automatically.</p>'
+      : '';
+
+    const monitorCard = d.monitored
+      ? `<div class="card monitor on">
+           <div>
+             <b>✅ Monitoring is ON</b>
+             <p class="muted">The server checks this automatically every ${d.interval_seconds}
+             seconds, and this page updates by itself.</p>
+             <p class="msg" id="watchMsg"></p>
+           </div>
+           <button id="watchBtn" class="secondary">Stop monitoring</button>
+         </div>`
+      : `<div class="card monitor">
+           <div>
+             <b>Keep an eye on this website?</b>
+             <p class="muted">Start monitoring and the server will check it automatically every
+             ${d.interval_seconds} seconds, building a real uptime history.</p>
+             <p class="msg" id="watchMsg"></p>
+           </div>
+           <button id="watchBtn">Start monitoring</button>
+         </div>`;
+
+    out.innerHTML = `
+      <div class="card">
+        <div class="top">
+          <div class="badge ${cls}">${label}</div>
+          <div>
+            <div class="name">${esc(d.target)}</div>
+            <div class="meta">
+              ${esc(cur.target_type || 'target')} &bull; IP ${esc(cur.resolved_ip || 'n/a')}
+              &bull; HTTP ${cur.status_code ?? '-'} &bull; ${esc(fmtTime(cur.checked_at))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>What is going on?</h3>
+        <div class="issue ${esc(dg.level)}">
+          <b>${esc(dg.title)}</b>
+          <p>${esc(dg.detail)}</p>
+          ${dg.suggestion ? '<p><strong>What you can do:</strong> ' + esc(dg.suggestion) + '</p>' : ''}
+        </div>
+      </div>
+
+      ${monitorCard}
+
+      <div class="card">
+        <h3>Uptime report</h3>
+        <div class="grid">
+          <div class="stat"><div class="v">${s.uptime_percent}%</div><div class="l">Uptime</div></div>
+          <div class="stat"><div class="v">${s.total_checks}</div><div class="l">Total checks</div></div>
+          <div class="stat"><div class="v">${s.failed}</div><div class="l">Failed checks</div></div>
+          <div class="stat"><div class="v">${avg}</div><div class="l">Average response</div></div>
+          <div class="stat"><div class="v">${now}</div><div class="l">Latest response</div></div>
+        </div>
+        ${hint}
+      </div>
+
+      <div class="card">
+        <h3>Recent checks (oldest to newest)</h3>
+        <div class="bars">${bars}</div>
+      </div>
+
+      <div class="card">
+        <h3>Check history</h3>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>Time</th><th>Status</th><th>Code</th><th>Speed</th><th>Problem</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+
+    document.getElementById('watchBtn').addEventListener('click', () => toggleWatch(d));
+
+    if (d.monitored) { if (!timer) startTimer(d.target); }
+    else { stopTimer(); }
+  }
+
+  async function runCheck(target) {
+    stopTimer();
+    btn.disabled = true;
+    btn.textContent = 'Checking...';
+    out.innerHTML = '<div class="card center"><div class="spinner"></div>' +
+      '<p class="muted">Checking ' + esc(target) + ' ... this can take a few seconds</p></div>';
+    try {
+      const res = await fetch('/api/check?target=' + encodeURIComponent(target),
+                              { headers: AUTH_HEADERS });
+      const data = await res.json();
+      if (!res.ok) {
+        showError(typeof data.detail === 'string' ? data.detail
+                  : 'Please enter a valid domain or IP address.');
+        return;
+      }
+      render(data);
+    } catch (err) {
+      showError('Could not reach the server. Is it running?');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Check';
+    }
+  }
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const target = input.value.trim();
+    if (target) runCheck(target);
+  });
+
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      input.value = chip.textContent;
+      runCheck(chip.textContent);
+    });
+  });
+</script>
+</body>
+</html> 

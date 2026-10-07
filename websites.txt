@@ -1,0 +1,7 @@
+# One target per line: domain, IP address or full URL. '#' lines are ignored.
+google.com
+https://github.com
+8.8.8.8
+1.1.1.1
+https://this-site-does-not-exist-12345.com
+not-a-valid-url 
